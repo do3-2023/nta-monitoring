@@ -9,9 +9,9 @@ import (
 )
 
 type Person struct {
-	LastName    string
-	PhoneNumber string
-	Location    string
+	LastName    string `json:"last_name"`
+	PhoneNumber string `json:"phone_number"`
+	Location    string `json:"location"`
 }
 
 var persons = []Person{
