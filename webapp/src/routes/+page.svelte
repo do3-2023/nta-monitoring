@@ -21,7 +21,6 @@
       {person.last_name} 
       <ul>
         <li>📱 {person.phone_number}</li>
-        <li>📍 {person.location}</li>
       </ul>
     </li>
     <br>

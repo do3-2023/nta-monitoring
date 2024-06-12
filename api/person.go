@@ -12,21 +12,26 @@ import (
 
 type Person struct {
 	gorm.Model
-	LastName    string `json:"last_name"`
-	PhoneNumber string `json:"phone_number"`
-	Location    string `json:"location"`
+	LastName    string  `json:"last_name"`
+	PhoneNumber string  `json:"phone_number"`
+	Location    *string `json:"location"`
 }
 
 var persons = []Person{
-	{LastName: "Doe", PhoneNumber: "123456789", Location: "New York"},
-	{LastName: "Smith", PhoneNumber: "987654321", Location: "Los Angeles"},
-	{LastName: "Johnson", PhoneNumber: "456789123", Location: "Chicago"},
-	{LastName: "Williams", PhoneNumber: "654321987", Location: "Houston"},
-	{LastName: "Brown", PhoneNumber: "789123456", Location: "Phoenix"},
-	{LastName: "Jones", PhoneNumber: "321987654", Location: "Philadelphia"},
-	{LastName: "Garcia", PhoneNumber: "567891234", Location: "San Antonio"},
-	{LastName: "Martinez", PhoneNumber: "891234567", Location: "San Diego"},
-	{LastName: "Hernandez", PhoneNumber: "234567891", Location: "Dallas"},
+	{LastName: "Doe", PhoneNumber: "123456789", Location: NullableString("New York")},
+	{LastName: "Smith", PhoneNumber: "987654321", Location: NullableString("Los Angeles")},
+	{LastName: "Johnson", PhoneNumber: "456789123", Location: NullableString("Chicago")},
+	{LastName: "Brown", PhoneNumber: "654321987", Location: NullableString("Houston")},
+	{LastName: "Williams", PhoneNumber: "789123456", Location: NullableString("Phoenix")},
+	{LastName: "Jones", PhoneNumber: "321987654", Location: NullableString("Philadelphia")},
+	{LastName: "Garcia", PhoneNumber: "654123987", Location: NullableString("San Antonio")},
+	{LastName: "Martinez", PhoneNumber: "987321654", Location: NullableString("San Diego")},
+	{LastName: "Hernandez", PhoneNumber: "123789456", Location: NullableString("Dallas")},
+	{LastName: "Gonzalez", PhoneNumber: "456321789", Location: NullableString("San Jose")},
+}
+
+func NullableString(x string) *string {
+	return &x
 }
 
 func (db *DB) getPersons(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +41,11 @@ func (db *DB) getPersons(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(result.Error)
 		return
+	}
+
+	// remove location field from persons
+	for i := range persons {
+		persons[i].Location = nil
 	}
 
 	// convert to json
