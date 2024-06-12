@@ -12,22 +12,21 @@ import (
 
 type Person struct {
 	gorm.Model
-	LastName    string  `json:"last_name"`
-	PhoneNumber string  `json:"phone_number"`
-	Location    *string `json:"location"`
+	LastName    string `json:"last_name"`
+	PhoneNumber string `json:"phone_number"`
 }
 
 var persons = []Person{
-	{LastName: "Doe", PhoneNumber: "123456789", Location: NullableString("New York")},
-	{LastName: "Smith", PhoneNumber: "987654321", Location: NullableString("Los Angeles")},
-	{LastName: "Johnson", PhoneNumber: "456789123", Location: NullableString("Chicago")},
-	{LastName: "Brown", PhoneNumber: "654321987", Location: NullableString("Houston")},
-	{LastName: "Williams", PhoneNumber: "789123456", Location: NullableString("Phoenix")},
-	{LastName: "Jones", PhoneNumber: "321987654", Location: NullableString("Philadelphia")},
-	{LastName: "Garcia", PhoneNumber: "654123987", Location: NullableString("San Antonio")},
-	{LastName: "Martinez", PhoneNumber: "987321654", Location: NullableString("San Diego")},
-	{LastName: "Hernandez", PhoneNumber: "123789456", Location: NullableString("Dallas")},
-	{LastName: "Gonzalez", PhoneNumber: "456321789", Location: NullableString("San Jose")},
+	{LastName: "Doe", PhoneNumber: "123456789"},
+	{LastName: "Smith", PhoneNumber: "987654321"},
+	{LastName: "Johnson", PhoneNumber: "456789123"},
+	{LastName: "Brown", PhoneNumber: "654321987"},
+	{LastName: "Williams", PhoneNumber: "789123456"},
+	{LastName: "Jones", PhoneNumber: "321987654"},
+	{LastName: "Garcia", PhoneNumber: "654123987"},
+	{LastName: "Martinez", PhoneNumber: "987321654"},
+	{LastName: "Hernandez", PhoneNumber: "123789456"},
+	{LastName: "Gonzalez", PhoneNumber: "456321789"},
 }
 
 func NullableString(x string) *string {
@@ -41,11 +40,6 @@ func (db *DB) getPersons(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(result.Error)
 		return
-	}
-
-	// remove location field from persons
-	for i := range persons {
-		persons[i].Location = nil
 	}
 
 	// convert to json
