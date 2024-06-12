@@ -37,6 +37,8 @@ func main() {
 	// Migrate the schema
 	db.conn.AutoMigrate(&Person{})
 
+	db.conn.Migrator().DropColumn(&Person{}, "location")
+
 	log.Println("Table persons is ready")
 
 	// create api router
