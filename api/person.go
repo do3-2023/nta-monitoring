@@ -6,9 +6,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
 type Person struct {
+	gorm.Model
 	LastName    string `json:"last_name"`
 	PhoneNumber string `json:"phone_number"`
 	Location    string `json:"location"`
@@ -27,22 +30,12 @@ var persons = []Person{
 }
 
 func (db *DB) getPersons(w http.ResponseWriter, r *http.Request) {
-	query := `SELECT last_name, phone_number, location FROM persons`
-	rows, err := db.conn.Query(query)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
-		return
-	}
 	var persons []Person
-	for rows.Next() {
-		var person Person
-		if err := rows.Scan(&person.LastName, &person.PhoneNumber, &person.Location); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
-		persons = append(persons, person)
+	result := db.conn.Find(&persons)
+	if result.Error != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(result.Error)
+		return
 	}
 
 	// convert to json
@@ -61,17 +54,10 @@ func (db *DB) addPerson(w http.ResponseWriter, r *http.Request) {
 	// get random person to add
 	person := persons[rand.Intn(len(persons))]
 
-	// add to db
-	query := `INSERT INTO persons (last_name, phone_number, location) VALUES ($1, $2, $3)`
-	_, err := db.conn.Exec(
-		query,
-		person.LastName,
-		person.PhoneNumber,
-		person.Location,
-	)
-	if err != nil {
+	res := db.conn.Create(&person)
+	if res.Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
+		log.Println(res.Error)
 		return
 	}
 	log.Println("New person added")

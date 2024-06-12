@@ -9,7 +9,7 @@ services:
     depends_on:
       - db
     environment:
-      - DB_URL=db:5432
+      - DB_URL=db
       - DB_USERNAME=test
       - DB_PASSWORD=test
       - DB_NAME=test
