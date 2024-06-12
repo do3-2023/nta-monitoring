@@ -34,18 +34,19 @@ func main() {
 	defer db.conn.Close()
 	log.Println("Connected to DB")
 
-	// create table for drinks
+	// create table for persons
 	query := `
-		CREATE TABLE IF NOT EXISTS drinks (
+		CREATE TABLE IF NOT EXISTS persons (
 			id SERIAL PRIMARY KEY,
-			emoji VARCHAR(100) NOT NULL,
-			name VARCHAR(100) NOT NULL
+			last_name VARCHAR(100) NOT NULL,
+			phone_number VARCHAR(100) NOT NULL,
+			location VARCHAR(100) NOT NULL
 		)`
 	_, err = db.conn.Exec(query)
 	if err != nil {
-		log.Println("The table already exists")
+		log.Println(err)
 	}
-	log.Println("Table drinks is ready")
+	log.Println("Table persons is ready")
 
 	// create api router
 	r := chi.NewRouter()
@@ -64,8 +65,8 @@ func main() {
 	// health route
 	r.Get("/healthz", db.checkDB)
 
-	r.Get("/drinks", db.getDrinks)
-	r.Post("/drinks", db.addDrink)
+	r.Get("/persons", db.getPersons)
+	r.Post("/persons", db.addPerson)
 
 	log.Println("Starting api on port 3000")
 	http.ListenAndServe(":3000", r)
