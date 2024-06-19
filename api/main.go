@@ -1,118 +1,163 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	_ "github.com/lib/pq"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/fermyon/spin-go-sdk/pg"
+	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
+	"github.com/fermyon/spin/sdk/go/v2/variables"
 )
 
 type DB struct {
-	conn *gorm.DB
+	DB *sql.DB
 }
 
-func main() {
-	// create connection to DB
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable TimeZone=Europe/Paris",
-		os.Getenv("DB_URL"),
-		os.Getenv("DB_USERNAME"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-	)
-	db, err := newDB(dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Connected to DB")
+type Person struct {
+	LastName    string `json:"last_name"`
+	PhoneNumber string `json:"phone_number"`
+}
 
-	// Migrate the schema
-	db.conn.AutoMigrate(&Person{})
+var persons = []Person{
+	{LastName: "Doe", PhoneNumber: "123456789"},
+	{LastName: "Smith", PhoneNumber: "987654321"},
+	{LastName: "Johnson", PhoneNumber: "456789123"},
+	{LastName: "Brown", PhoneNumber: "654321987"},
+	{LastName: "Williams", PhoneNumber: "789123456"},
+	{LastName: "Jones", PhoneNumber: "321987654"},
+	{LastName: "Garcia", PhoneNumber: "654123987"},
+	{LastName: "Martinez", PhoneNumber: "987321654"},
+	{LastName: "Hernandez", PhoneNumber: "123789456"},
+	{LastName: "Gonzalez", PhoneNumber: "456321789"},
+}
 
-	db.conn.Migrator().DropColumn(&Person{}, "location")
+func init() {
+	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
+		// create connection to DB
+		url, _ := variables.Get("db_url")
+		username, _ := variables.Get("db_username")
+		password, _ := variables.Get("db_password")
+		name, _ := variables.Get("db_name")
+		dsn := fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable",
+			url,
+			username,
+			password,
+			name,
+		)
+		db, err := newDB(dsn)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.DB.Close()
+		fmt.Println("Connected to DB")
 
-	log.Println("Table persons is ready")
+		rand.Seed(time.Now().UnixNano())
 
-	// create api router
-	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"https://*", "http://*"},
-		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
-	}))
+		router := spinhttp.NewRouter()
+		router.GET("/healthz", db.checkDB)
+		router.GET("/persons", db.getPersons)
+		router.POST("/persons", db.addPerson)
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
+		router.ServeHTTP(w, r)
 	})
-
-	// health route
-	r.Get("/healthz", db.checkDB)
-
-	r.Get("/persons", db.getPersons)
-	r.Post("/persons", db.addPerson)
-
-	log.Println("Starting api on port 3000")
-	http.ListenAndServe(":3000", r)
 }
+
+func main() {}
 
 // Create a new DB connection
 func newDB(dsn string) (*DB, error) {
-	// Number of retry attempts
-	maxRetries := 10
-
-	var db *gorm.DB
-	var err error
-
-	// Retry connecting to the database
-	for i := 1; i <= maxRetries; i++ {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err == nil {
-			// Successfully connected
-			fmt.Println("Connected to database on attempt", i)
-			break
-		}
-
-		// Log the error and wait before retrying
-		fmt.Printf("Attempt %d: Failed to connect to database: %v\n", i, err)
-		time.Sleep(2 * time.Second)
-	}
-
+	var db *sql.DB
+	db = pg.Open(dsn)
+	// create table for persons
+	query := `
+		CREATE TABLE IF NOT EXISTS persons (
+			id SERIAL PRIMARY KEY,
+			phone_number VARCHAR(100) NOT NULL,
+			last_name VARCHAR(100) NOT NULL
+		)`
+	_, err := db.Query(query)
 	if err != nil {
-		fmt.Println("Exceeded maximum retry attempts. Exiting...")
+		fmt.Println("Failed to create table:", err.Error())
 		return nil, err
 	}
-	return &DB{db}, err
+
+	return &DB{db}, nil
 }
 
 // Check the DB connection by making a sql call
-func (db *DB) checkDB(w http.ResponseWriter, r *http.Request) {
+func (db *DB) checkDB(w http.ResponseWriter, r *http.Request, ps spinhttp.Params) {
 	// Pinging the database
-	sqlDB, err := db.conn.DB()
-	if err != nil {
-		fmt.Println("Failed to get database instance:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
-		return
-	}
-
-	err = sqlDB.Ping()
+	err := db.DB.Ping()
 	if err != nil {
 		fmt.Println("Failed to ping database:", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Database is up")
+}
+
+func (db *DB) getPersons(w http.ResponseWriter, r *http.Request, ps spinhttp.Params) {
+	err := db.DB.Ping()
+	if err != nil {
+		fmt.Println("Failed to ping database:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("Getting persons")
+	rows, err := db.DB.Query("SELECT last_name, phone_number FROM persons")
+	if err != nil {
+		fmt.Println(db.DB.Stats())
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var persons []*Person
+	for rows.Next() {
+		var person Person
+		if err := rows.Scan(&person.LastName, &person.PhoneNumber); err != nil {
+			fmt.Println(err)
+		}
+		persons = append(persons, &person)
+	}
+
+	// convert to json
+	out, err := json.Marshal(persons)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, string(out))
+}
+
+func (db *DB) addPerson(w http.ResponseWriter, r *http.Request, ps spinhttp.Params) {
+	// get random person to add
+	person := persons[rand.Intn(len(persons))]
+	fmt.Println("Adding person", person)
+
+	_, err := db.DB.Exec("INSERT INTO persons (last_name, phone_number) VALUES ($1, $2)", person.LastName, person.PhoneNumber)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// convert to json
+	out, err := json.Marshal(person)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, string(out))
 }
