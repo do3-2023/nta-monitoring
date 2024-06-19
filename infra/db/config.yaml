@@ -4,4 +4,4 @@ metadata:
   name: db-config
   namespace: db
 data:
-  db_name: "bar_counter"
+  db_name: "test"

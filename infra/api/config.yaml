@@ -4,5 +4,5 @@ metadata:
   name: api-config
   namespace: api
 data:
-  db_name: "bar_counter"
-  db_url: "nta-kube-db.db.svc.cluster.local:5432"
+  db_name: "test"
+  db_url: "nta-kube-db.db.svc.cluster.local"
