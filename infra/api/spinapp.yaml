@@ -1,0 +1,14 @@
+apiVersion: core.spinoperator.dev/v1alpha1
+kind: SpinApp
+metadata:
+  name: nta-kube-api
+  namespace: api
+  labels:
+    app: nta-kube-api
+spec:
+  image: "ghcr.io/do3-2023/nta-monitoring/api:spinkube"
+  replicas: 3
+  executor: containerd-shim-spin
+  variables:
+    - name: db_url
+      value: nta-kube-db.db.svc.cluster.local
