@@ -25,6 +25,8 @@ I used Cilium as my CNI plugin. You can find the installation instructions [here
 
 The config I used for this cluster is in infra/cilium.yaml.
 
+For PV and PVC, I used the local-path provisioner. You can find the installation instructions [here](https://github.com/rancher/local-path-provisioner).
+
 ## WASM
 
 I made a second version of the app using WebAssembly. You can find the code in the [wasm branch](https://github.com/do3-2023/nta-monitoring/tree/spinkube).
@@ -38,6 +40,12 @@ spin build
 ```
 
 The app is then deployed on k8s using Spinkube. You can find the installation instructions [here](https://www.spinkube.dev/).
+
+To access the app, I port-forwarded the service to my local machine:
+
+```bash
+kubectl port-forward svc/nta-kube-api 3000:3000
+```
 
 ## License
 
