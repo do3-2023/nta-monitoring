@@ -6,7 +6,7 @@ metadata:
 spec:
   ports:
   - port: 3000
-    targetPort: 3000
+    targetPort: 80
   selector:
     core.spinoperator.dev/app-name: nta-kube-api
 

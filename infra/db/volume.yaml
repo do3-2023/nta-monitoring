@@ -6,7 +6,7 @@ metadata:
     app: db
     type: local
 spec:
-  storageClassName: manual
+  storageClassName: local-path
   capacity:
     storage: 1Gi
   accessModes:
@@ -22,7 +22,7 @@ metadata:
     app: db
   namespace: db
 spec:
-  storageClassName: manual
+  storageClassName: local-path
   accessModes:
     - ReadWriteOnce
   resources:
